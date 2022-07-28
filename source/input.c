@@ -926,38 +926,66 @@ int input_read_parameters(
   class_call(parser_read_double(pfc,"Delta_N_twin",&param1,&flag1,errmsg),
               errmsg,
               errmsg);
-	class_test(pba->r_all_twin > 0. && ((param1 < 0.001) || (param1 > 1.)),
+	class_test((param1 < 0.001) || (param1 > 1.),
               errmsg,
                "Twin BBN is only computed for Delta_N_twin = [0.001, 1]. Therefore, Delta_N_twin_gamma must be between 0.001 and 1, you asked for Delta_N_twin = %e",param1); 
       if (flag1 == _TRUE_) {
         pba->Delta_N_twin = param1;
       }
       
-  class_call(parser_read_double(pfc,"ratio_vev_twin",&param1,&flag1,errmsg),
+  /*class_call(parser_read_double(pfc,"ratio_vev_twin",&param1,&flag1,errmsg),
               errmsg,
               errmsg);
-	class_test(pba->r_all_twin > 0. && (( param1 < 1.) || (param1 > 15.)),
+	class_test((param1 < 1.) || (param1 > 15.),
               errmsg,
                "Twin BBN is only computed for ratio_vev_twin = [1, 15]. Therefore, ratio_vev_twin must be between 1 and 15, you asked for ratio_vev_twin = %e",param1);
       if (flag1 == _TRUE_) {
         pba->ratio_vev_twin = param1;
-      }
+      }*/
       
+   class_call(parser_read_double(pfc,"m_p_dark",&param1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+         class_test((param1 < 0.),
+               errmsg,
+                "The dark proton mass must be > 0, you asked for m_p_dark=%e",param1);
+       if (flag1 == _TRUE_)
+         pba->m_p_dark = param1;
+   class_call(parser_read_double(pfc,"m_e_dark",&param1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+         class_test((param1 < 0.),
+               errmsg,
+                "The dark electron mass must be > 0, you asked for m_e_dark=%e",param1);
+       if (flag1 == _TRUE_)
+         pba->m_e_dark = param1;
+
+   class_call(parser_read_double(pfc,"alpha_dark",&param1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+         class_test((param1 < 0.) || (param1 > 1),
+               errmsg,
+                "The dark sector fine structure constant must be between 0 and 1, you asked for alpha_dark=%e",param1);
+       if (flag1 == _TRUE_)
+         pba->alpha_dark = param1;
     /* If any one of the twin parameters is zero, the code completely ignores the twin sector */  
-    if(((pba->r_all_twin != 0.) || (pba->Delta_N_twin != 0.)||(pba->ratio_vev_twin != 0.)) && (pba->r_all_twin)*(pba->Delta_N_twin)*(pba->ratio_vev_twin)==0.){
-          printf("-->[Twin Warning:] All the input parameters for the twin sector should be non-zero in .ini file.\n   Completely ignoring the twin sector!\n");
+    if(((pba->r_all_twin != 0.) || (pba->Delta_N_twin != 0.)||(pba->m_p_dark !=0.)||(pba->m_e_dark !=0.) || (pba->alpha_dark !=0.)) && (pba->r_all_twin)*(pba->Delta_N_twin)*(pba->m_p_dark)*(pba->m_e_dark)*(pba->alpha_dark)==0.){      
+          printf("-->[Twin Warning:] All the input parameters for the dark sector should be non-zero in .ini file.\n   Completely ignoring the dark sector!\n");
           pba->r_all_twin = 0.;
           pba->Delta_N_twin = 0.;
-          pba->ratio_vev_twin = 0.;
+          pba->m_p_dark=0.;
+          pba->m_e_dark=0.;
+          pba->alpha_dark=0.;
+
       };
       
     if(pba->r_all_twin!=0.){
-      pba->T0_twin = pba->T_cmb*pow(pba->Delta_N_twin/7.4,1./4.);
-      pba->T0_ur_twin = pow(4./11.,1./3.)*pba->T0_twin;
+      pba->T0_twin = pba->T_cmb*pow(pba->Delta_N_twin/4.4,1./4.);
+      pba->T0_ur_twin = 0;/*Old: pow(4./11.,1./3.)*pba->T0_twin;*/
       pba->Omega0_g_twin = pow(pba->T0_twin/pba->T_cmb,4.)*pba->Omega0_g;
-      pba->Omega0_ur_twin = 7./8.*3*pow(pba->T0_ur_twin/pba->T_cmb,4.)*pba->Omega0_g;
+      pba->Omega0_ur_twin = 0;/*Old: 7./8.*3*pow(pba->T0_ur_twin/pba->T_cmb,4.)*pba->Omega0_g;*/
       pba->Omega0_b_twin = pba->r_all_twin*pba->Omega0_cdm-pba->Omega0_g_twin-pba->Omega0_ur_twin;
-
+      pba->ratio_vev_twin = pba->m_e_dark/5.109988869e-4;
       pba->Omega0_ur += pba->Omega0_ur_twin;
       /* remove the contribution of twin baryons from Omega0_cdm */
       pba->Omega0_cdm -= pba->Omega0_b_twin;
@@ -1033,7 +1061,7 @@ int input_read_parameters(
   };
   /** END TWIN SECTOR */
 
-  if (pba->Omega0_idm_dr > 0. || pba->r_all_twin > 0.) {
+  if (pba->Omega0_idm_dr > 0.) {
 
     class_test(pba->Omega0_idr == 0.0,
                errmsg,
@@ -3619,14 +3647,6 @@ int input_default_precision ( struct precision * ppr ) {
 
 }
 
-int class_version(
-                  char * version
-                  ) {
-
-  sprintf(version,"%s",_VERSION_);
-  return _SUCCESS_;
-}
-
 /**
  * Automatically computes the machine precision.
  *
@@ -4249,15 +4269,6 @@ int input_find_root(double *xzero,
   return _SUCCESS_;
 }
 
-int file_exists(const char *fname){
-  FILE *file = fopen(fname, "r");
-  if (file != NULL){
-    fclose(file);
-    return _TRUE_;
-  }
-  return _FALSE_;
-}
-
 int input_auxillary_target_conditions(struct file_content * pfc,
                                       enum target_names target_name,
                                       double target_value,
@@ -4295,17 +4306,6 @@ int compare_integers (const void * elem1, const void * elem2) {
   if (f < s) return -1;
   return 0;
 }
-
-int compare_doubles(const void *a,const void *b) {
-  double *x = (double *) a;
-  double *y = (double *) b;
-  if (*x < *y)
-    return -1;
-  else if
-    (*x > *y) return 1;
-  return 0;
-}
-
 
 /**
  * Perform preliminary steps fur using the method called Pk_equal,

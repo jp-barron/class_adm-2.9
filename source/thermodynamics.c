@@ -4495,7 +4495,6 @@ int thermodynamics_recombination_twin(
   /* z_initial (defined here)*/
   /* Guess the maximum redshift that will be required */
   zinitial=floor(preco->CB1_He2_twin/(preco->Tnow_twin*32));//ppr->recfast_z_initial;
-  if (pba->r_all_twin < 0.01){zinitial = floor(zinitial*0.01/pba->r_all_twin);} 
   if (zinitial<10000) {zinitial=10000;}
   pth->z_reco_twin = zinitial;
   
@@ -4982,8 +4981,8 @@ int thermodynamics_derivs_twin(
   preco = ptpaw->preco;
   pvecback = ptpaw->pvecback;
     
-  /** Ground state energy of the twin helium  (in Joules) */
-  double epsilon0_twin = 13.6*_eV_*pba->ratio_vev_twin;
+  /** Ground state energy of the twin hydrogen  (in Joules) */
+  double epsilon0_twin = 13.6*_eV_*pba->ratio_vev_twin * (pba->alpha_dark/0.00729735)*(pba->alpha_dark/0.00729735);
   
   x = y_twin[0]; /**x_e*/
   Trad = preco->Tnow_twin * (1.+z);
@@ -5010,11 +5009,10 @@ int thermodynamics_derivs_twin(
     
     
   /** Local constants related to recombination*/
-  lyman2_twin = 0.448*(64.*_PI_/(sqrt(27.*_PI_)))*(pow(_eV_,4)/(pow(4*_PI_*_epsilon0_perm_,2)*pow(_m_e_twin,2)*pow(_c_,3)))*pow(epsilon0_twin/(_k_B_ *Trad),1./2.)*log(epsilon0_twin/(_k_B_*Trad));
+  lyman2_twin = 0.448*(64.*_PI_/(sqrt(27.*_PI_)))*(pow(_eV_,4)/(pow(4*_PI_*_epsilon0_perm_,2)*pow(_m_e_twin,2)*pow(_c_,3)))*pow(epsilon0_twin/(_k_B_ *Trad),1./2.)*log(epsilon0_twin/(_k_B_*Trad))*(pba->alpha_dark/0.00729735)*(pba->alpha_dark/0.00729735);
 
   beta_twin = (lyman2_twin/4)*pow(2.*_PI_*(_m_e_twin/_h_P_)*(_k_B_/_h_P_)*Trad,3./2.)*exp(-epsilon0_twin/(4*_k_B_*Trad));
-      
-  Lambda_2gamma_twin = 8.227*pba->ratio_vev_twin;
+  Lambda_2gamma_twin = 8.227*pba->ratio_vev_twin*pow((pba->alpha_dark/0.00729735),8);
   Lambda_alpha_twin = 8*_PI_*Hz*pow(3*epsilon0_twin/(4*_h_P_*_c_),3)/(n_H*(1-preco->x_e_Lalpha+0.0001));
   coeffXe_twin = -((Lambda_alpha_twin + Lambda_2gamma_twin)/(Lambda_alpha_twin + Lambda_2gamma_twin + 4*beta_twin))*lyman2_twin;
 
@@ -5058,7 +5056,6 @@ int thermodynamics_merge_reco_and_reio(
 
   int i,index_th,index_re;
   double x0;
-  double res = 1; /** #TWIN Step resolution in z-space for the extended table*/
 
   /** START #TWIN SECTOR */
     double reco_largest_z = 0, z, x0_twin;
@@ -5087,16 +5084,13 @@ int thermodynamics_merge_reco_and_reio(
 
   /** START #TWIN SECTOR */
   if (pba->has_twin == _TRUE_){
-    if (pth->z_reco_twin>100000)  {res = 3;}
-    if (pth->z_reco_twin>1000000) {res = 7;}
-    if (pth->z_reco_twin>10000000){res = 10;}
     reco_largest_z=preco->recombination_table[(ppr->recfast_Nz0-1)*preco->re_size+preco->index_re_z];
     if(pba->has_idm_dr == _FALSE_){
       if(pth->z_reco_twin > reco_largest_z){
-        additional_steps = floor((pth->z_reco_twin-reco_largest_z)/res)-2;
+        additional_steps = floor((pth->z_reco_twin-reco_largest_z)/0.5)-2;
         pth->tt_size += additional_steps;
         if(additional_steps > 0 && pth->thermodynamics_verbose > 0){
-          printf("Extended Thermodynamics table to z = %.2f by adding %d steps.\n",reco_largest_z + additional_steps*res,additional_steps);
+          printf("Extended Thermodynamics table to z = %.2f by adding %d steps.\n",reco_largest_z + additional_steps*0.5,additional_steps);
         }
       }
     }
@@ -5190,7 +5184,7 @@ int thermodynamics_merge_reco_and_reio(
       for (i=0; i < pth->tt_size; i++){
         /* First filling the standard model values in the extended part of the table */
         if(i > (reco_last_index-1)){
-          pth->z_table[i] = reco_largest_z + (i-reco_last_index+1)*res;
+          pth->z_table[i] = reco_largest_z + (i-reco_last_index+1)*0.5;
           /* same extrapolation formulas as in thermodynamics_at_z() */
           x0=pth->thermodynamics_table[(reco_last_index-1)*pth->th_size+pth->index_th_xe];
           pth->thermodynamics_table[i*pth->th_size+pth->index_th_xe]=x0;

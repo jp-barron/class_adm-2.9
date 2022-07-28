@@ -807,16 +807,16 @@ extern "C" {
 #define _Z_REC_MIN_ 500.
 
 //@}
-
+#define _GeV_over_kg_ 1.78266191e-27  /**< conversion factor from GeV to kg  (1 GeV= const*kg) */
 /** START #TWIN SECTOR */
-#define _m_H_twin _m_H_*(0.68+0.41*log(1.32+pba->ratio_vev_twin)) /** Twin H mass*/
+#define _m_H_twin (pba->m_e_dark*_GeV_over_kg_ + pba->m_p_dark*_GeV_over_kg_ -0.5 * pba->m_e_dark*_GeV_over_kg_ * pba->alpha_dark * pba->alpha_dark) /** Dark H mass*/
 #define _m_e_twin _m_e_*pba->ratio_vev_twin /** Twin electron mass*/
 #define _epsilon0_perm_ 8.8541878128e-12 /** Vacuum Permittivity*/
-#define _sigma_twin  _sigma_/pow(pba->ratio_vev_twin,2) /**< Twin Thomson cross-section in m^2 */
+#define _sigma_twin  (_sigma_*(pba->alpha_dark/0.00729735)*(pba->alpha_dark/0.00729735)/pow(pba->ratio_vev_twin,2)) /**< Twin Thomson cross-section in m^2 */
 #define _Z_REC_MIN_twin 1000.
-#define _L_H_ion_twin 1.096787737e7*pba->ratio_vev_twin
-#define _L_He1_ion_twin 1.98310772e7*pba->ratio_vev_twin
-#define _L_He2_ion_twin 4.389088863e7*pba->ratio_vev_twin
+#define _L_H_ion_twin 1.096787737e7*pba->ratio_vev_twin*(pba->alpha_dark/0.00729735)*(pba->alpha_dark/0.00729735)
+#define _L_He1_ion_twin 1.98310772e7*pba->ratio_vev_twin*(pba->alpha_dark/0.00729735)*(pba->alpha_dark/0.00729735)
+#define _L_He2_ion_twin 4.389088863e7*pba->ratio_vev_twin*(pba->alpha_dark/0.00729735)*(pba->alpha_dark/0.00729735)
 /** END TWIN SECTOR */
 
 #endif
